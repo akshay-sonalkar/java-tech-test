@@ -27,8 +27,9 @@ public class AnagramCommandLineRunner implements CommandLineRunner {
 
         String filePath = args[0];
 
-        List<String> words = reader.readWordsFromFile(filePath);
-        List<List<String>> grouped = grouper.groupAnagrams(words);
-        writer.write(grouped);
+        reader.processWordsBySize(filePath, words -> {
+            List<List<String>> grouped = grouper.groupAnagrams(words);
+            writer.write(grouped);
+        });
     }
 }
