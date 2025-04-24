@@ -5,61 +5,40 @@ import java.util.*;
 
 public class FileReaderService {
 
-    // Time complexity: O(n) where n is the number of lines in the file
-    // Space complexity: O(n) where n is the number of lines in the file
-    public List<String> readWordsFromFile(String path) throws IOException {
-        File file = new File(path);
-        if (!file.exists()) {
-            throw new FileNotFoundException(path + " Does not exist");
-        }
+    private final BufferedReader reader;
 
+    public FileReaderService(String filePath) throws IOException {
+        File file = new File(filePath);
+        if (!file.exists()) {
+            throw new IOException(filePath + " Does not exist");
+        }
+        this.reader = new BufferedReader(new FileReader(filePath));
+    }
+
+    public List<String> readWordsOfSameLength() throws IOException {
         List<String> words = new ArrayList<>();
-        try (BufferedReader br = new BufferedReader(new java.io.FileReader(file))) {
-            String line;
-            while ((line = br.readLine()) != null) {
-                String word = line.trim();
-                if (!word.isEmpty()) {
-                    words.add(word);
-                }
+        String line;
+        int currentLength = -1;
+
+        while ((line = reader.readLine()) != null) {
+            if (line.trim().isEmpty()) continue;
+            if (currentLength == -1) {
+                currentLength = line.length();
             }
+
+            if (line.length() != currentLength) {
+                // Push back
+                reader.reset();
+                break;
+            }
+            reader.mark(1000);
+            words.add(line);
         }
-        return words;
+
+        return words.isEmpty() ? null : words;
     }
 
-    public void processWordsBySize(String path, WordProcessor processor) throws IOException {
-        File file = new File(path);
-        if (!file.exists()) {
-            throw new FileNotFoundException(path + " Does not exist");
-        }
-
-        try (BufferedReader br = new BufferedReader(new java.io.FileReader(file))) {
-            List<String> currentGroup = new ArrayList<>();
-            int currentSize = -1;
-
-            String line;
-            while ((line = br.readLine()) != null) {
-                String word = line.trim();
-                if (!word.isEmpty()) {
-                    if (currentSize == -1 || word.length() == currentSize) {
-                        currentGroup.add(word);
-                        currentSize = word.length();
-                    } else {
-                        processor.process(currentGroup);
-                        currentGroup.clear();
-                        currentGroup.add(word);
-                        currentSize = word.length();
-                    }
-                }
-            }
-
-            if (!currentGroup.isEmpty()) {
-                processor.process(currentGroup);
-            }
-        }
-    }
-
-    @FunctionalInterface
-    public interface WordProcessor {
-        void process(List<String> words) throws IOException;
+    public void close() throws IOException {
+        reader.close();
     }
 }
